@@ -92,37 +92,40 @@ typedef struct {
     int xcount;
     uint8_t total_sprites;
     uint8_t whole_sprites;
+    uint24_t xlist[1000];
+    uint8_t ylist[1000];
+    uint24_t index;
+    uint8_t delay;
+    uint8_t multiplier;
+    bool pomflag;
 } game_t;
 static game_t game;
 
 fruit_t *getFreeFruit(void);
 
-bool flag = false;
-bool pomflag = false;
-int i = 0, index = 0;
-int mult = 1;
-int xList[1000], yList[1000];
+typedef struct {
+    unsigned int highscore;
+} file_t;
+static file_t settings;
 
-/* Sprite buffer for rotating sprites */
+static const char *filename = "FRUITDAT";
+static const char *title = "Fruit Ninja CE";
+static const char *opt = "Options";
+static const char *inf = "Info";
+static const char *high = "High: ";
+
+// sprite buffer for rotating sprites
 gfx_UninitedSprite(sprite_buffer, 64, 64);
 
-struct {
-    int highscore;
-} file;
-char *filename = "FRUITDAT";
-
 void main(void) {
-
+    unsigned int score = 0;
     ti_var_t slot;
-    int unsigned score = 0;
-    int *temp_ptr;
 
-    char *title = "Fruit Ninja CE";
-    char *opt = "Options";
-    char *inf = "Info";
-    char *high = "High: ";
     int j, c, jc, jy, menuRock = 0, button = 0, gameTime = 0;
     bool clockwise = true, exit = false;
+
+    game.multiplier = 1;
+    game.pomflag = false;
 
     gfx_Begin();
     gfx_SetDrawBuffer();
@@ -130,10 +133,11 @@ void main(void) {
 
     srand(rtc_Time());
 
-    memset(&file, 0, sizeof(file));
+    memset(&settings, 0, sizeof settings);
     ti_CloseAll();
-    if (slot = ti_Open(filename, "r"))
-        ti_Read(&file, sizeof(file), 1, slot);
+    if (slot = ti_Open(filename, "r")) {
+        ti_Read(&settings, sizeof settings, 1, slot);
+    }
     ti_CloseAll();
 
     /* Menu Loop */
@@ -175,7 +179,7 @@ void main(void) {
             gfx_SetTextScale(2, 2);
             printCentered(high, 75, -100, 0);
             gfx_SetTextXY(95, 75);
-            gfx_PrintInt(file.highscore, 1);
+            gfx_PrintInt(settings.highscore, 1);
             gfx_SetTextScale(1, 1);
 
             gfx_SetColor(5);
@@ -206,13 +210,13 @@ void main(void) {
 
             if (y > 0) {
                 // put screen swipe locations in array
-                xList[index] = x;
-                yList[index] = y;
+                game.xlist[game.index] = x;
+                game.ylist[game.index] = y;
 
                 // if there is an active line in the array from swiping
-                if (index > 0) {
+                if (game.index > 0) {
                     gfx_SetColor(0);
-                    gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
+                    gfx_Line_NoClip(game.xlist[game.index - 1], game.ylist[game.index - 1], x, y);
 
                     if (kb_Data[3] == kb_4) // start
                         button = 1;
@@ -226,15 +230,15 @@ void main(void) {
                     if (kb_Data[5] == kb_3) // exit
                         button = 4;
                 }
-                index++;
-                i = 0;
-                if (index == 1000)
-                    index = 0;
+                game.index++;
+                game.delay = 0;
+                if (game.index == 1000)
+                    game.index = 0;
             } else { // there was not a swipe over the keys
-                if (i < 10)
-                    i++;
-                if (i == 10)
-                    index = 0;
+                if (game.delay < 10)
+                    game.delay++;
+                else
+                    game.index = 0;
             }
 
             gfx_BlitBuffer();
@@ -510,7 +514,6 @@ void main(void) {
 
         gfx_SetColor(0);
         gfx_SetTextScale(3, 2);
-        flag = false;
         score = 0;
         game.total_sprites = 0;
         game.whole_sprites = 0;
@@ -589,9 +592,9 @@ void main(void) {
             }
 
             if ((score + 1) % 10 == 0)
-                pomflag = false;
+                game.pomflag = false;
 
-            if (score % 10 == 0 && score > 0 && pomflag == false) {
+            if (score % 10 == 0 && score > 0 && game.pomflag == false) {
 
                 fruit_t *n = getFreeFruit();
                 n->sprite = pomegranate;
@@ -605,7 +608,7 @@ void main(void) {
                 game.whole_sprites++;
                 game.total_sprites++;
 
-                pomflag = true;
+                game.pomflag = true;
             }
 
             // throw a bomb on the screen
@@ -630,12 +633,12 @@ void main(void) {
             if (y > 0) {
 
                 // put screen swipe locations in array
-                xList[index] = x;
-                yList[index] = y;
+                game.xlist[game.index] = x;
+                game.ylist[game.index] = y;
 
                 // if there is an active line in the array from swiping
-                if (index > 0) {
-                    gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
+                if (game.index > 0) {
+                    gfx_Line_NoClip(game.xlist[game.index - 1], game.ylist[game.index - 1], x, y);
 
                     if (game.whole_sprites > 0) { // if whole entity count on the screen is
                                   // greater than 0
@@ -647,7 +650,7 @@ void main(void) {
 
                             if (f->y > 0) {
                                 // detect if line touches sprite
-                                if (isSliced(xList[index - 1], yList[index - 1],
+                                if (isSliced(game.xlist[game.index - 1], game.ylist[game.index - 1],
                                              x, y, f->x, f->y)) {
                                     // something was sliced
                                     if (f->sprite == bomb) {
@@ -666,14 +669,13 @@ void main(void) {
                                         gfx_PrintInt(score, 1);
 
                                         gfx_BlitBuffer();
-                                        flag = false;
-                                        do {
+                                        for(;;) {
                                             kb_Scan();
                                             if (kb_Data[6] == kb_Clear ||
                                                 kb_Data[1] == kb_2nd ||
                                                 kb_Data[6] == kb_Enter)
-                                                flag = true;
-                                        } while (flag == false);
+                                                break;
+                                        }
 
                                     } else if (f->sprite == pomegranate) {
                                         score++;
@@ -719,16 +721,16 @@ void main(void) {
                         }
                     }
                 }
-                index++;
-                i = 0;
-                if (index == 1000)
-                    index = 0;
+                game.index++;
+                game.delay = 0;
+                if (game.index == 1000)
+                    game.index = 0;
             } else { // there was not a swipe over the keys
 
-                if (i < 10)
-                    i++;
-                if (i == 10)
-                    index = 0;
+                if (game.delay < 10)
+                    game.delay++;
+                else
+                    game.index = 0;
             }
 
             gfx_BlitBuffer();
@@ -752,31 +754,29 @@ void main(void) {
                 gfx_BlitBuffer();
                 gfx_SetColor(0);
                 gfx_SetTextScale(3, 2);
-                flag = false;
-                do {
+                for(;;) {
                     kb_Scan();
                     if (kb_Data[1] == kb_Window) {
-                        flag = true;
                         exit = true;
+                        break;
                     }
                     if (kb_Data[1] == kb_Trace) {
-                        flag = true;
+                        break;
                     }
-                } while (flag == false);
+                }
             }
 
         // wait until bomb is hit or game loop is otherwise exited
         } while (!exit);
 
-        temp_ptr = &file.highscore;
-        if (score > *temp_ptr)
-            *temp_ptr = score;
+        if (score > settings.highscore)
+            settings.highscore = score;
     }
 
     gfx_End();
 
     if (slot = ti_Open(filename, "w"))
-        ti_Write(&file, sizeof(file), 1, slot);
+        ti_Write(&settings, sizeof settings, 1, slot);
     ti_CloseAll();
 }
 
@@ -807,12 +807,12 @@ void moveFruits(void) {
             f->velocity -= 0.2;
 
             if (f->sprite == pomegranate) {
-                mult = 3;
+                game.multiplier = 3;
             } else {
-                mult = 1;
+                game.multiplier = 1;
             }
 
-            f->x += mult * sin(f->angle);
+            f->x += game.multiplier * sin(f->angle);
             f->rotation += f->rotation_speed;
             if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
                 f->y = 0;
@@ -1084,26 +1084,26 @@ void swipe(int x, int y) {
     // there was a swipe over the keys
     if (y > 0) {
 
-        xList[index] = x;
-        yList[index] = y;
+        game.xlist[game.index] = x;
+        game.ylist[game.index] = y;
 
         gfx_SetColor(0);
-        if (index > 0)
-            gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
+        if (game.index > 0)
+            gfx_Line_NoClip(game.xlist[game.index - 1], game.ylist[game.index - 1], x, y);
 
-        index++;
-        i = 0;
-        if (index == 1000) {
-            index = 0;
+        game.index++;
+        game.delay = 0;
+        if (game.index == 1000) {
+            game.index = 0;
         }
 
     // there was not a swipe over the keys
     } else {
 
-        if (i < 10)
-            i++;
-        if (i == 10)
-            index = 0;
+        if (game.delay < 10)
+            game.delay++;
+        else
+            game.index = 0;
     }
 }
 
