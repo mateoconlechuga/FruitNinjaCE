@@ -92,6 +92,8 @@ static fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
 
 typedef struct {
     int xcount;
+    uint8_t total_sprites;
+    uint8_t whole_sprites;
 } game_t;
 static game_t game;
 
@@ -99,7 +101,7 @@ fruit_t *getFreeFruit(void);
 
 bool flag = false;
 bool pomflag = false;
-int eC = 0, all_eC = 0, i = 0, index = 0;
+int i = 0, index = 0;
 int mult = 1;
 int xList[1000], yList[1000];
 
@@ -510,7 +512,8 @@ void main(void) {
         gfx_SetTextScale(3, 2);
         flag = false;
         score = 0;
-        all_eC = 0;
+        game.total_sprites = 0;
+        game.whole_sprites = 0;
 
         /* ---------------------------------------------------------------------------------------------------------*/
         /* START THE GAME!!! */
@@ -562,8 +565,8 @@ void main(void) {
                 n->rotation = 0;
                 n->rotation_speed = rand() % 5;
 
-                eC++;
-                all_eC++;
+                game.whole_sprites++;
+                game.total_sprites++;
 
                 if (rand() & 1) {
                     for (j = 0; j < (int)(rand() % 3); j++) {
@@ -577,8 +580,8 @@ void main(void) {
                         n->rotation = 0;
                         n->rotation_speed = rand() % 5;
 
-                        eC++;
-                        all_eC++;
+                        game.whole_sprites++;
+                        game.total_sprites++;
                     }
                 }
 
@@ -599,8 +602,8 @@ void main(void) {
                 n->rotation = 0;
                 n->rotation_speed = rand() % 5;
 
-                eC++;
-                all_eC++;
+                game.whole_sprites++;
+                game.total_sprites++;
 
                 pomflag = true;
             }
@@ -616,8 +619,8 @@ void main(void) {
                 n->rotation = 0;
                 n->rotation_speed = rand() % 8;
 
-                eC++;
-                all_eC++;
+                game.whole_sprites++;
+                game.total_sprites++;
             }
 
             // convert key input to x and y locations on screen
@@ -634,7 +637,7 @@ void main(void) {
                 if (index > 0) {
                     gfx_Line(xList[index - 1], yList[index - 1], x, y);
 
-                    if (eC > 0) { // if whole entity count on the screen is
+                    if (game.whole_sprites > 0) { // if whole entity count on the screen is
                                   // greater than 0
                                   // (does not include halves)
                         for (j = 0; j < MAX_FRUITS; j++) {
@@ -698,8 +701,8 @@ void main(void) {
                                                 n->rotation = f->rotation;
                                                 n->rotation_speed = 0;
 
-                                                eC--;
-                                                all_eC++;
+                                                game.whole_sprites--;
+                                                game.total_sprites++;
                                                 f->y = 0;
                                                 score++;
 
@@ -791,7 +794,6 @@ fruit_t *getFreeFruit(void) {
 /* Move any entities that are on the screen */
 void moveFruits(void) {
     uint8_t j;
-    int c;
     for (j = 0; j < MAX_FRUITS; j++) {
 
         /* Get the pointer to the fruit information */
@@ -816,18 +818,19 @@ void moveFruits(void) {
             f->rotation += f->rotation_speed;
             if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
                 f->y = 0;
-                all_eC--;
+                game.total_sprites--;
 
                 if (f->sprite == bomb) {
-                    eC--;
+                    game.whole_sprites--;
                 } else if (f->sprite == pomegranate) {
-                    eC--;
+                    game.whole_sprites--;
                 } else {
+                    uint8_t c;
                     for (c = 0; c < NUM_FRUITS; c++) {
                         if (f->sprite == fruit_sprites[c].uncut) {
                             game.xcount++;
                             shake(3);
-                            eC--;
+                            game.whole_sprites--;
                             break;
                         }
                     }
@@ -1089,15 +1092,15 @@ void debugDisplay() {
     int j;
     gfx_SetTextScale(1, 1);
 
-    // eC is the amount of entities on the screen that aren't fruit halves
-    gfx_PrintStringXY("eC: ", 2, 230);
+    // game.whole_sprites is the amount of entities on the screen that aren't fruit halves
+    gfx_PrintStringXY("game.whole_sprites: ", 2, 230);
     gfx_SetTextXY(22, 230);
-    gfx_PrintInt(eC, 1);
+    gfx_PrintInt(game.whole_sprites, 1);
 
-    // all_eC is the total amount of sprites currently onscreen
-    gfx_PrintStringXY("all_eC: ", 2, 220);
+    // game.total_sprites is the total amount of sprites currently onscreen
+    gfx_PrintStringXY("game.total_sprites: ", 2, 220);
     gfx_SetTextXY(50, 220);
-    gfx_PrintInt(all_eC, 1);
+    gfx_PrintInt(game.total_sprites, 1);
 
     gfx_SetTextScale(3, 2);
 }
