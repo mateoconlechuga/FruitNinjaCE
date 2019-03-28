@@ -26,8 +26,6 @@
 
 #define PI 3.1415926
 
-void throwFruit(gfx_sprite_t *fruitname, int curX, int curY, int angle,
-                int velocity, int rotation, int rotSpeed);
 void moveEnts();
 void animateExplosion(int cx, int cy);
 bool isSliced(int x1, int y1, int x2, int y2, int j);
@@ -96,6 +94,8 @@ typedef struct {
     int xcount;
 } game_t;
 static game_t game;
+
+fruit_t *getFreeFruit(void);
 
 bool flag = false;
 bool pomflag = false;
@@ -553,19 +553,30 @@ void main(void) {
             // interval to throw fruits on the screen
             if (gameTime == 100) {
 
-                // throwFruit(fruitname,   x,     y, angle, velocity, rotation,
-                // rotation
-                // speed)
-                throwFruit(fruit_sprites[rand() % NUM_FRUITS].uncut, (int)(25 + (rand() % 250)),
-                           240, PI, 9, 0, rand() % 5);
+                fruit_t *n = getFreeFruit();
+                n->sprite = fruit_sprites[rand() % NUM_FRUITS].uncut;
+                n->x = (int)(25 + (rand() % 250));
+                n->y = 240;
+                n->angle = PI;
+                n->velocity = 9;
+                n->rotation = 0;
+                n->rotation_speed = rand() % 5;
+
                 eC++;
                 all_eC++;
 
                 if (rand() & 1) {
                     for (j = 0; j < (int)(rand() % 3); j++) {
-                        throwFruit(fruit_sprites[rand() % NUM_FRUITS].uncut,
-                                   (int)(25 + (rand() % 250)), 240, PI,
-                                   9, 0, rand() % 5);
+
+                        fruit_t *n = getFreeFruit();
+                        n->sprite = fruit_sprites[rand() % NUM_FRUITS].uncut;
+                        n->x = (int)(25 + (rand() % 250));
+                        n->y = 240;
+                        n->angle = PI;
+                        n->velocity = 9;
+                        n->rotation = 0;
+                        n->rotation_speed = rand() % 5;
+
                         eC++;
                         all_eC++;
                     }
@@ -579,7 +590,15 @@ void main(void) {
 
             if (score % 10 == 0 && score > 0 && pomflag == false) {
 
-                throwFruit(pomegranate, 320, 220, 3 * PI / 2, 8, 0, rand() % 5);
+                fruit_t *n = getFreeFruit();
+                n->sprite = pomegranate;
+                n->x = 320;
+                n->y = 220;
+                n->angle = 3 * PI / 2;
+                n->velocity = 8;
+                n->rotation = 0;
+                n->rotation_speed = rand() % 5;
+
                 eC++;
                 all_eC++;
 
@@ -588,8 +607,15 @@ void main(void) {
 
             // throw a bomb on the screen
             if ((int)(rand() % 200) == 50) {
-                throwFruit(bomb, (int)(25 + (rand() % 250)), 240, PI,
-                           9 + (rand() % 1), 0, rand() % 8);
+                fruit_t *n = getFreeFruit();
+                n->sprite = bomb;
+                n->x = (int)(25 + (rand() % 250));
+                n->y = 240;
+                n->angle = PI;
+                n->velocity = 9;
+                n->rotation = 0;
+                n->rotation_speed = rand() % 8;
+
                 eC++;
                 all_eC++;
             }
@@ -612,15 +638,18 @@ void main(void) {
                                   // greater than 0
                                   // (does not include halves)
                         for (j = 0; j < MAX_FRUITS; j++) {
-                            if (fruit[j].y > 0) {
+
+                            /* Get the pointer to the fruit information */
+                            fruit_t *f = &fruit[j];
+
+                            if (f->y > 0) {
                                 // Detect if line touches sprite
                                 if (isSliced(xList[index - 1], yList[index - 1],
                                              x, y, j)) {
                                     // Something was sliced
-                                    if (fruit[j].sprite == bomb) {
+                                    if (f->sprite == bomb) {
                                         // YOU HIT A BOMB!!!
-                                        animateExplosion(fruit[j].x + 20,
-                                                         fruit[j].y + 20);
+                                        animateExplosion(f->x + 20, f->y + 20);
                                         exit = true;
 
                                         gfx_FillScreen(0);
@@ -643,24 +672,35 @@ void main(void) {
                                                 flag = true;
                                         } while (flag == false);
 
-                                    } else if (fruit[j].sprite == pomegranate) {
+                                    } else if (f->sprite == pomegranate) {
                                         score++;
                                     } else { // fruit was sliced
                                         for (c = 0; c < NUM_FRUITS; c++) {
-                                            if (fruit[j].sprite == fruit_sprites[c].uncut) {
+                                            if (f->sprite == fruit_sprites[c].uncut) {
                                                 // throwFruit(fruitname, x, y,
                                                 // angle, velocity,
                                                 // rotation, rotation speed)
-                                                throwFruit(fruit_sprites[c].top, fruit[j].x,
-                                                           fruit[j].y, fruit[j].angle,
-                                                           2, fruit[j].rotation, 0);
-                                                throwFruit(fruit_sprites[c].bottom,
-                                                           fruit[j].x, fruit[j].y,
-                                                           fruit[j].angle, 0,
-                                                           fruit[j].rotation, 0);
+                                                fruit_t *n = getFreeFruit();
+                                                n->sprite = fruit_sprites[c].top;
+                                                n->x = f->x;
+                                                n->y = f->y;
+                                                n->angle = f->angle;
+                                                n->velocity = 2;
+                                                n->rotation = f->rotation;
+                                                n->rotation_speed = 0;
+
+                                                n = getFreeFruit();
+                                                n->sprite = fruit_sprites[c].bottom;
+                                                n->x = f->x;
+                                                n->y = f->y;
+                                                n->angle = f->angle;
+                                                n->velocity = 0;
+                                                n->rotation = f->rotation;
+                                                n->rotation_speed = 0;
+
                                                 eC--;
                                                 all_eC++;
-                                                fruit[j].y = 0;
+                                                f->y = 0;
                                                 score++;
 
                                                 if ((score % 100) == 0 &&
@@ -740,66 +780,58 @@ void main(void) {
 
 /* Additional Functions! */
 
-/* Throw a fruit onto the screen */
-void throwFruit(gfx_sprite_t *fruitname, int curX, int curY, int angle,
-                int velocity, int rotation, int rotSpeed) {
-    int j = 0;
-    while (fruit[j].y > 0) {
-        j++;
+fruit_t *getFreeFruit(void) {
+    fruit_t *f = &fruit[0];
+    while (f->y > 0) {
+        f++;
     }
-    fruit[j].sprite = fruitname;
-    fruit[j].x = curX;
-    fruit[j].y = curY;
-    fruit[j].angle = angle;
-    fruit[j].velocity = velocity;
-    fruit[j].rotation = rotation;
-    fruit[j].rotation_speed = rotSpeed;
+    return f;
 }
 
 /* Move any entities that are on the screen */
 void moveEnts() {
     int j;
     int c;
-    for (j = 0; j < 20; j++) {
-        if (fruit[j].y > 0) {
-            gfx_TransparentSprite(gfx_RotateScaleSprite(fruit[j].sprite,
+    for (j = 0; j < MAX_FRUITS; j++) {
+
+        /* Get the pointer to the fruit information */
+        fruit_t *f = &fruit[j];
+
+        if (f->y > 0) {
+            gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
                                                         sprite_buffer,
-                                                        fruit[j].rotation, 1.2 * 64),
-                                  fruit[j].x, fruit[j].y);
+                                                        f->rotation, 1.2 * 64),
+                                  f->x, f->y);
 
-            fruit[j].y -= fruit[j].velocity;
-            fruit[j].velocity -= 0.2;
+            f->y -= f->velocity;
+            f->velocity -= 0.2;
 
-            if (fruit[j].sprite == pomegranate) {
+            if (f->sprite == pomegranate) {
                 mult = 3;
             } else {
                 mult = 1;
             }
 
-            fruit[j].x += mult * sin(fruit[j].angle);
-            fruit[j].rotation += fruit[j].rotation_speed;
-            if (fruit[j].rotation > 255)
-                fruit[j].rotation = 0;
-            if (fruit[j].y >= 240 || fruit[j].x >= 320 || fruit[j].x <= -32) {
-                fruit[j].y = 0;
+            f->x += mult * sin(f->angle);
+            f->rotation += f->rotation_speed;
+            if (f->rotation > 255)
+                f->rotation = 0;
+            if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
+                f->y = 0;
                 all_eC--;
 
-                if (fruit[j].sprite == bomb) {
+                if (f->sprite == bomb) {
                     eC--;
-                } else if (fruit[j].sprite == pomegranate) {
+                } else if (f->sprite == pomegranate) {
                     eC--;
                 } else {
-                    flag = false;
                     for (c = 0; c < NUM_FRUITS; c++) {
-                        if (fruit[j].sprite == fruit_sprites[c].uncut) {
-                            flag = true;
+                        if (f->sprite == fruit_sprites[c].uncut) {
+                            game.xcount++;
+                            shake(3);
+                            eC--;
                             break;
                         }
-                    }
-                    if (flag == true) {
-                        game.xcount++;
-                        shake(3);
-                        eC--;
                     }
                 }
             }
