@@ -611,7 +611,7 @@ void main(void) {
                     if (eC > 0) { // if whole entity count on the screen is
                                   // greater than 0
                                   // (does not include halves)
-                        for (j = 0; j <= 20; j++) {
+                        for (j = 0; j < MAX_FRUITS; j++) {
                             if (fruit[j].y > 0) {
                                 // Detect if line touches sprite
                                 if (isSliced(xList[index - 1], yList[index - 1],
