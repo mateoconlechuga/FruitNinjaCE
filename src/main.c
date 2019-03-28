@@ -1,5 +1,5 @@
-/*
- *----------------------------------------------------------------------------/
+/**
+ * ---------------------------------------------------------------------------/
  * Program Name: Fruit Ninja CE
  * Author: Michael2_3B
  * Special Thanks: MateoC for the toolchain and his programming expertise
@@ -7,7 +7,7 @@
  * License: MIT
  * Description: A fruit ninja remake for the CE. Swipe the calculator keys to
  * slice fruits!
- *----------------------------------------------------------------------------/
+ * ---------------------------------------------------------------------------/
  */
 
 #include <stdbool.h>
@@ -41,29 +41,49 @@ void shake(int s);
 void swipe();
 void debugDisplay();
 
-// entX and entY is x and y values of sprites.
-// entAng is the angle at which they are thrown
-// entVel is the velocity at which they are thrown
-// entRot is the sprites' rotation amount on the screen
-// entRotSpeed is how fast the sprite rotates
-// when fruits are thrown, entName gets loaded with sprites from sN[], so as to
-// specify which fruit it is at what index
-// and of course, these arrays are parallel so that the values at the matching
-// indices give info for the same sprite
-double entX[20], entAng[20], entVel[20], entRot[20];
-double entY[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int entRotSpeed[20];
+/**
+ * Fruit Structure
+ * x, y: Coordinates of fruit on screen
+ * angle: Angle of throw
+ * velocity: Instanteous velocity of fruit
+ * rotation: Angle of rotation of fruit
+ * rotation_speed: How fast is the fruit rotating
+ */
+typedef struct {
+    double x, y;
+    double angle;
+    double velocity;
+    double rotation;
+    int rotation_speed;
+    gfx_sprite_t *sprite;
+} fruit_t;
+
+/**
+ * Allocate a fixed number of fruits
+ */
+#define MAX_FRUITS 20
+static fruit_t fruit[MAX_FRUITS];
+
 int sprites = 9;
 int xcount = 0;
-gfx_sprite_t *entName[20];
-gfx_sprite_t *sN[9] = {watermelon, apple,  pear, pineapple, strawberry,
-                       red_apple,  grapes, kiwi, banana};
-gfx_sprite_t *sS[18] = {watermelon_top,    watermelon_bottom, apple_top,
-                        apple_bottom,      pear_top,          pear_bottom,
-                        pineapple_top,     pineapple_bottom,  strawberry_top,
-                        strawberry_bottom, red_apple_top,     red_apple_bottom,
-                        grape_top,         grape_bottom,      kiwi_top,
-                        kiwi_bottom,       banana_top,        banana_bottom};
+
+gfx_sprite_t *sN[9] = {
+    watermelon, apple,  pear, pineapple, strawberry,
+    red_apple,  grapes, kiwi, banana
+};
+
+gfx_sprite_t *sS[18] = {
+    watermelon_top,  watermelon_bottom,
+    apple_top,       apple_bottom,
+    pear_top,        pear_bottom,
+    pineapple_top,   pineapple_bottom,
+    strawberry_top,  strawberry_bottom,
+    red_apple_top,   red_apple_bottom,
+    grape_top,       grape_bottom,
+    kiwi_top,        kiwi_bottom,
+    banana_top,      banana_bottom
+};
+
 bool flag = false;
 bool pomflag = false;
 int eC = 0, all_eC = 0, x = 0, y = 0, i = 0, index = 0;
@@ -570,15 +590,15 @@ void main(void) {
                                   // greater than 0
                                   // (does not include halves)
                         for (j = 0; j <= 20; j++) {
-                            if (entY[j] > 0) {
+                            if (fruit[j].y > 0) {
                                 // Detect if line touches sprite
                                 if (isSliced(xList[index - 1], yList[index - 1],
                                              x, y, j)) {
                                     // Something was sliced
-                                    if (entName[j] == bomb) {
+                                    if (fruit[j].sprite == bomb) {
                                         // YOU HIT A BOMB!!!
-                                        animateExplosion(entX[j] + 20,
-                                                         entY[j] + 20);
+                                        animateExplosion(fruit[j].x + 20,
+                                                         fruit[j].y + 20);
                                         exit = true;
 
                                         gfx_FillScreen(0);
@@ -601,24 +621,24 @@ void main(void) {
                                                 flag = true;
                                         } while (flag == false);
 
-                                    } else if (entName[j] == pomegranate) {
+                                    } else if (fruit[j].sprite == pomegranate) {
                                         score++;
                                     } else { // fruit was sliced
                                         for (c = 0; c <= sprites - 1; c++) {
-                                            if (entName[j] == sN[c]) {
+                                            if (fruit[j].sprite == sN[c]) {
                                                 // throwFruit(fruitname, x, y,
                                                 // angle, velocity,
                                                 // rotation, rotation speed)
-                                                throwFruit(sS[2 * c], entX[j],
-                                                           entY[j], entAng[j],
-                                                           2, entRot[j], 0);
+                                                throwFruit(sS[2 * c], fruit[j].x,
+                                                           fruit[j].y, fruit[j].angle,
+                                                           2, fruit[j].rotation, 0);
                                                 throwFruit(sS[2 * c + 1],
-                                                           entX[j], entY[j],
-                                                           entAng[j], 0,
-                                                           entRot[j], 0);
+                                                           fruit[j].x, fruit[j].y,
+                                                           fruit[j].angle, 0,
+                                                           fruit[j].rotation, 0);
                                                 eC--;
                                                 all_eC++;
-                                                entY[j] = 0;
+                                                fruit[j].y = 0;
                                                 score++;
 
                                                 if ((score % 100) == 0 &&
@@ -702,16 +722,16 @@ void main(void) {
 void throwFruit(gfx_sprite_t *fruitname, int curX, int curY, int angle,
                 int velocity, int rotation, int rotSpeed) {
     int j = 0;
-    while (entY[j] > 0) {
+    while (fruit[j].y > 0) {
         j++;
     }
-    entName[j] = fruitname;
-    entX[j] = curX;
-    entY[j] = curY;
-    entAng[j] = angle;
-    entVel[j] = velocity;
-    entRot[j] = rotation;
-    entRotSpeed[j] = rotSpeed;
+    fruit[j].sprite = fruitname;
+    fruit[j].x = curX;
+    fruit[j].y = curY;
+    fruit[j].angle = angle;
+    fruit[j].velocity = velocity;
+    fruit[j].rotation = rotation;
+    fruit[j].rotation_speed = rotSpeed;
 }
 
 /* Move any entities that are on the screen */
@@ -719,37 +739,37 @@ void moveEnts() {
     int j;
     int c;
     for (j = 0; j < 20; j++) {
-        if (entY[j] > 0) {
-            gfx_TransparentSprite(gfx_RotateScaleSprite(entName[j],
+        if (fruit[j].y > 0) {
+            gfx_TransparentSprite(gfx_RotateScaleSprite(fruit[j].sprite,
                                                         sprite_buffer,
-                                                        entRot[j], 1.2 * 64),
-                                  entX[j], entY[j]);
+                                                        fruit[j].rotation, 1.2 * 64),
+                                  fruit[j].x, fruit[j].y);
 
-            entY[j] -= entVel[j];
-            entVel[j] -= 0.2;
+            fruit[j].y -= fruit[j].velocity;
+            fruit[j].velocity -= 0.2;
 
-            if (entName[j] == pomegranate) {
+            if (fruit[j].sprite == pomegranate) {
                 mult = 3;
             } else {
                 mult = 1;
             }
 
-            entX[j] += mult * sin(entAng[j]);
-            entRot[j] += entRotSpeed[j];
-            if (entRot[j] > 255)
-                entRot[j] = 0;
-            if (entY[j] >= 240 || entX[j] >= 320 || entX[j] <= -32) {
-                entY[j] = 0;
+            fruit[j].x += mult * sin(fruit[j].angle);
+            fruit[j].rotation += fruit[j].rotation_speed;
+            if (fruit[j].rotation > 255)
+                fruit[j].rotation = 0;
+            if (fruit[j].y >= 240 || fruit[j].x >= 320 || fruit[j].x <= -32) {
+                fruit[j].y = 0;
                 all_eC--;
 
-                if (entName[j] == bomb) {
+                if (fruit[j].sprite == bomb) {
                     eC--;
-                } else if (entName[j] == pomegranate) {
+                } else if (fruit[j].sprite == pomegranate) {
                     eC--;
                 } else {
                     flag = false;
                     for (c = 0; c <= sprites - 1; c++) {
-                        if (entName[j] == sN[c]) {
+                        if (fruit[j].sprite == sN[c]) {
                             flag = true;
                             c = sprites;
                         }
@@ -813,8 +833,8 @@ void animateExplosion(int cx, int cy) {
 
 /* Detect if line goes through sprite */
 bool isSliced(int x1, int y1, int x2, int y2, int j) {
-    float sx = entX[j];
-    float sy = entY[j];
+    float sx = fruit[j].x;
+    float sy = fruit[j].y;
     float sw = 1.2 * 32;
     float sh = 1.2 * 32;
 
