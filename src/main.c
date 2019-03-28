@@ -28,16 +28,14 @@
 
 void moveFruits(void);
 void animateExplosion(int cx, int cy);
-bool isSliced(int x1, int y1, int x2, int y2, int j);
-bool lineRect(float x1, float y1, float x2, float y2, float rx, float ry,
-              float rw, float rh);
-bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3,
-              float x4, float y4);
+bool isSliced(int x1, int y1, int x2, int y2, int fx, int fy);
 void printCentered(char *str, int y, int offset, uint8_t c);
 void keyToXY(int *x_val, int *y_val);
 void shake(int s);
 void swipe(int x, int y);
 void debugDisplay();
+
+#define FRUIT_SCALE 1.2
 
 /**
  * Fruit Structure
@@ -48,7 +46,7 @@ void debugDisplay();
  * rotation_speed: How fast is the fruit rotating
  */
 typedef struct {
-    double x, y;
+    int x, y;
     double angle;
     double velocity;
     uint8_t rotation;
@@ -642,14 +640,14 @@ void main(void) {
                                   // (does not include halves)
                         for (j = 0; j < MAX_FRUITS; j++) {
 
-                            /* Get the pointer to the fruit information */
+                            // get the pointer to the fruit information
                             fruit_t *f = &fruit[j];
 
                             if (f->y > 0) {
-                                // Detect if line touches sprite
+                                // detect if line touches sprite
                                 if (isSliced(xList[index - 1], yList[index - 1],
-                                             x, y, j)) {
-                                    // Something was sliced
+                                             x, y, f->x, f->y)) {
+                                    // something was sliced
                                     if (f->sprite == bomb) {
                                         // YOU HIT A BOMB!!!
                                         animateExplosion(f->x + 20, f->y + 20);
@@ -781,8 +779,7 @@ void main(void) {
     ti_CloseAll();
 }
 
-/* Additional Functions! */
-
+// gets a pointer to an available fruit slot
 fruit_t *getFreeFruit(void) {
     fruit_t *f = &fruit[0];
     while (f->y > 0) {
@@ -791,18 +788,18 @@ fruit_t *getFreeFruit(void) {
     return f;
 }
 
-/* Move any entities that are on the screen */
+// move any fruit entities that are on the screen
 void moveFruits(void) {
     uint8_t j;
     for (j = 0; j < MAX_FRUITS; j++) {
 
-        /* Get the pointer to the fruit information */
+        // get the pointer to the fruit information
         fruit_t *f = &fruit[j];
 
         if (f->y > 0) {
             gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
                                                         sprite_buffer,
-                                                        f->rotation, 1.2 * 64),
+                                                        f->rotation, FRUIT_SCALE * 64),
                                   f->x, f->y);
 
             f->y -= f->velocity;
@@ -886,48 +883,70 @@ void animateExplosion(int cx, int cy) {
     }
 }
 
-/* Detect if line goes through sprite */
-bool isSliced(int x1, int y1, int x2, int y2, int j) {
-    float sx = fruit[j].x;
-    float sy = fruit[j].y;
-    float sw = 1.2 * 32;
-    float sh = 1.2 * 32;
+/**
+ * Detect if line goes through sprite
+ */
+bool isSliced(int x1, int y1, int x2, int y2, int rx1, int ry1) {
+    float minX, maxX;
+    float minY, maxY;
+    float dx;
 
-    bool hit = lineRect(x1, y1, x2, y2, sx, sy, sw, sh);
+    int rx2 = rx1 + FRUIT_SCALE * 32;
+    int ry2 = ry1 + FRUIT_SCALE * 32;
 
-    return hit;
-}
-
-/* fancy calculations used in detecting a slice */
-/* http://jeffreythompson.org/collision-detection/line-rect.php */
-bool lineRect(float x1, float y1, float x2, float y2, float rx, float ry,
-              float rw, float rh) {
-    bool left = lineLine(x1, y1, x2, y2, rx, ry, rx, ry + rh);
-    bool right = lineLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh);
-    bool top = lineLine(x1, y1, x2, y2, rx, ry, rx + rw, ry);
-    bool bottom = lineLine(x1, y1, x2, y2, rx, ry + rh, rx + rw, ry + rh);
-
-    if (left || right || top || bottom) {
-        return true;
+    if (x1 > x2) {
+        minX = x2;
+        maxX = x1;
     } else {
+        minX = x1;
+        maxX = x2;
+    }
+
+    // locate X intersection
+    if (maxX > rx2) {
+        maxX = rx2;
+    }
+
+    if (minX < rx1) {
+        minX = rx1;
+    }
+
+    if (minX > maxX) {
         return false;
     }
-}
 
-/* fancy calculations used in detecting a slice */
-/* http://jeffreythompson.org/collision-detection/line-rect.php */
-bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3,
-              float x4, float y4) {
-    float uA = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) /
-               ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
-    float uB = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) /
-               ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+    minY = y1;
+    maxY = y2;
+    dx = x2 - x1;
 
-    if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
-        return true;
-    } else {
+    // project X onto Y
+    if (abs(dx) > 0.000001) {
+        float a = (y2 - y1) / dx;
+        float b = y1 - a * x1;
+        minY = a * minX + b;
+        maxY = a * maxX + b;
+    }
+
+    if (minY > maxY) {
+        float tmp = maxY;
+        maxY = minY;
+        minY = tmp;
+    }
+
+    // locate Y intersection
+    if (maxY > ry2) {
+        maxY = ry2;
+    }
+
+    if (minY < ry1) {
+        minY = ry1;
+    }
+
+    if (minY > maxY) {
         return false;
     }
+
+    return true;
 }
 
 /* Prints a screen centered string, with desired offset and color */
