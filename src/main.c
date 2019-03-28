@@ -763,9 +763,8 @@ void main(void) {
                 } while (flag == false);
             }
 
-        } while (
-            exit ==
-            false); // wait until bomb is hit or game loop is otherwise exited
+        // wait until bomb is hit or game loop is otherwise exited
+        } while (!exit);
 
         temp_ptr = &file.highscore;
         if (score > *temp_ptr)
