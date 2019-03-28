@@ -888,9 +888,9 @@ void animateExplosion(int cx, int cy) {
  * Detect if line goes through sprite
  */
 bool isSliced(int x1, int y1, int x2, int y2, int rx1, int ry1) {
-    float minX, maxX;
-    float minY, maxY;
-    float dx;
+    int minX, maxX;
+    int minY, maxY;
+    int dx;
 
     int rx2 = rx1 + FRUIT_SCALE * 32;
     int ry2 = ry1 + FRUIT_SCALE * 32;
@@ -921,15 +921,15 @@ bool isSliced(int x1, int y1, int x2, int y2, int rx1, int ry1) {
     dx = x2 - x1;
 
     // project X onto Y
-    if (abs(dx) > 0.000001) {
-        float a = (y2 - y1) / dx;
+    if (abs(dx) > 0) {
+        float a = (float)(y2 - y1) / (float)dx;
         float b = y1 - a * x1;
         minY = a * minX + b;
         maxY = a * maxX + b;
     }
 
     if (minY > maxY) {
-        float tmp = maxY;
+        int tmp = maxY;
         maxY = minY;
         minY = tmp;
     }
