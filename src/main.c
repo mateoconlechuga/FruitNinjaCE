@@ -33,7 +33,7 @@ bool lineRect(float x1, float y1, float x2, float y2, float rx, float ry,
               float rw, float rh);
 bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3,
               float x4, float y4);
-void print_string_centered(char *str, int y, int offset, uint8_t c);
+void printCentered(char *str, int y, int offset, uint8_t c);
 void keyToXY(int *x_val, int *y_val);
 void shake(int s);
 void swipe(int x, int y);
@@ -167,13 +167,13 @@ void main(void) {
             gfx_Rectangle(17, 47, 280, 1);
 
             gfx_SetTextScale(3, 3);
-            print_string_centered(title, 17, -3, 1);
-            print_string_centered(title, 18, -2, 2);
-            print_string_centered(title, 19, -1, 3);
-            print_string_centered(title, 20, 0, 0);
+            printCentered(title, 17, -3, 1);
+            printCentered(title, 18, -2, 2);
+            printCentered(title, 19, -1, 3);
+            printCentered(title, 20, 0, 0);
 
             gfx_SetTextScale(2, 2);
-            print_string_centered(high, 75, -100, 0);
+            printCentered(high, 75, -100, 0);
             gfx_SetTextXY(95, 75);
             gfx_PrintInt(file.highscore, 1);
             gfx_SetTextScale(1, 1);
@@ -184,10 +184,10 @@ void main(void) {
             gfx_FillCircle(269, 120, 30);
             gfx_FillCircle(230, 195, 30);
 
-            print_string_centered("Start", 135, -80, 3);
-            print_string_centered(opt, 135, 30, 3);
-            print_string_centered(inf, 135, 110, 3);
-            print_string_centered("Quit", 210, 70, 3);
+            printCentered("Start", 135, -80, 3);
+            printCentered(opt, 135, 30, 3);
+            printCentered(inf, 135, 110, 3);
+            printCentered("Quit", 210, 70, 3);
 
             gfx_TransparentSprite(gfx_RotateScaleSprite(watermelon,
                                                         sprite_buffer, menuRock,
@@ -320,10 +320,10 @@ void main(void) {
                 gfx_Rectangle(3, 3, 314, 234);
 
                 gfx_SetTextScale(2, 2);
-                print_string_centered(opt, 24, -3, 1);
-                print_string_centered(opt, 25, -2, 2);
-                print_string_centered(opt, 26, -1, 3);
-                print_string_centered(opt, 27, 0, 0);
+                printCentered(opt, 24, -3, 1);
+                printCentered(opt, 25, -2, 2);
+                printCentered(opt, 26, -1, 3);
+                printCentered(opt, 27, 0, 0);
 
                 // gfx_SetTextScale(1,1);
 
@@ -422,20 +422,20 @@ void main(void) {
                 gfx_Rectangle(3, 3, 314, 234);
 
                 gfx_SetTextScale(2, 2);
-                print_string_centered(inf, 24, -3, 1);
-                print_string_centered(inf, 25, -2, 2);
-                print_string_centered(inf, 26, -1, 3);
-                print_string_centered(inf, 27, 0, 0);
+                printCentered(inf, 24, -3, 1);
+                printCentered(inf, 25, -2, 2);
+                printCentered(inf, 26, -1, 3);
+                printCentered(inf, 27, 0, 0);
 
                 gfx_SetTextScale(1, 1);
-                print_string_centered("Created by Michael2_3B", 70, 0, 0);
-                print_string_centered("version x.x.x", 85, 0, 2);
-                print_string_centered("released xx/xx/2019", 100, 0, 0);
-                print_string_centered(
+                printCentered("Created by Michael2_3B", 70, 0, 0);
+                printCentered("version x.x.x", 85, 0, 2);
+                printCentered("released xx/xx/2019", 100, 0, 0);
+                printCentered(
                     "Special thanks to MateoC for his expertise", 115, 0, 0);
-                print_string_centered("and Pieman7373 for artistic help", 130,
+                printCentered("and Pieman7373 for artistic help", 130,
                                       0, 0);
-                print_string_centered("based on Halfbrick Studios Fruit Ninja",
+                printCentered("based on Halfbrick Studios Fruit Ninja",
                                       220, 0, 0);
 
                 gfx_FillCircle(35, 35, 25);
@@ -657,9 +657,9 @@ void main(void) {
 
                                         gfx_FillScreen(0);
                                         gfx_SetTextScale(2, 2);
-                                        print_string_centered("Game Over!", 105,
+                                        printCentered("Game Over!", 105,
                                                               0, 3);
-                                        print_string_centered("Score:", 130,
+                                        printCentered("Score:", 130,
                                                               -20, 3);
                                         gfx_SetTextXY(190, 130);
                                         gfx_SetTextFGColor(3);
@@ -745,10 +745,10 @@ void main(void) {
                 gfx_SetColor(0);
                 gfx_Rectangle(49, 49, 222, 142);
                 gfx_SetTextScale(3, 3);
-                print_string_centered("Paused", 65, 0, 0);
+                printCentered("Paused", 65, 0, 0);
                 gfx_SetTextScale(1, 1);
-                print_string_centered("Quit", 175, -70, 2);
-                print_string_centered("Resume", 175, 70, 2);
+                printCentered("Quit", 175, -70, 2);
+                printCentered("Resume", 175, 70, 2);
                 gfx_BlitBuffer();
                 gfx_SetColor(0);
                 gfx_SetTextScale(3, 2);
@@ -931,7 +931,7 @@ bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3,
 }
 
 /* Prints a screen centered string, with desired offset and color */
-void print_string_centered(char *str, int y, int offset, uint8_t c) {
+void printCentered(char *str, int y, int offset, uint8_t c) {
     gfx_SetTextFGColor(c);
     gfx_PrintStringXY(str, (LCD_WIDTH - gfx_GetStringWidth(str)) / 2 + offset,
                       y);
