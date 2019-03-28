@@ -26,7 +26,7 @@
 
 #define PI 3.1415926
 
-void moveEnts();
+void moveFruits(void);
 void animateExplosion(int cx, int cy);
 bool isSliced(int x1, int y1, int x2, int y2, int j);
 bool lineRect(float x1, float y1, float x2, float y2, float rx, float ry,
@@ -51,8 +51,8 @@ typedef struct {
     double x, y;
     double angle;
     double velocity;
-    double rotation;
-    int rotation_speed;
+    uint8_t rotation;
+    uint8_t rotation_speed;
     gfx_sprite_t *sprite;
 } fruit_t;
 
@@ -547,8 +547,8 @@ void main(void) {
                     break;
             }
 
-            // move entities on the screen
-            moveEnts();
+            // move fruit entities on the screen
+            moveFruits();
 
             // interval to throw fruits on the screen
             if (gameTime == 100) {
@@ -789,8 +789,8 @@ fruit_t *getFreeFruit(void) {
 }
 
 /* Move any entities that are on the screen */
-void moveEnts() {
-    int j;
+void moveFruits(void) {
+    uint8_t j;
     int c;
     for (j = 0; j < MAX_FRUITS; j++) {
 
@@ -814,8 +814,6 @@ void moveEnts() {
 
             f->x += mult * sin(f->angle);
             f->rotation += f->rotation_speed;
-            if (f->rotation > 255)
-                f->rotation = 0;
             if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
                 f->y = 0;
                 all_eC--;
