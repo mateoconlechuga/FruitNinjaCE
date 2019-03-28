@@ -62,9 +62,9 @@ typedef struct {
  * Allocate a fixed number of fruits
  */
 #define MAX_FRUITS 20
+#define NUM_FRUITS 9
 static fruit_t fruit[MAX_FRUITS];
 
-int sprites = 9;
 int xcount = 0;
 
 gfx_sprite_t *sN[9] = {
@@ -534,14 +534,14 @@ void main(void) {
                 // throwFruit(fruitname,   x,     y, angle, velocity, rotation,
                 // rotation
                 // speed)
-                throwFruit(sN[rand() % sprites], (int)(25 + (rand() % 250)),
+                throwFruit(sN[rand() % NUM_FRUITS], (int)(25 + (rand() % 250)),
                            240, PI, 9 + (rand() % 1), 0, rand() % 5);
                 eC++;
                 all_eC++;
 
                 if ((int)(rand() % 2) == 1) {
                     for (j = 0; j < (int)(rand() % 3); j++) {
-                        throwFruit(sN[rand() % sprites],
+                        throwFruit(sN[rand() % NUM_FRUITS],
                                    (int)(25 + (rand() % 250)), 240, PI,
                                    9 + (rand() % 1), 0, rand() % 5);
                         eC++;
@@ -624,7 +624,7 @@ void main(void) {
                                     } else if (fruit[j].sprite == pomegranate) {
                                         score++;
                                     } else { // fruit was sliced
-                                        for (c = 0; c <= sprites - 1; c++) {
+                                        for (c = 0; c < NUM_FRUITS; c++) {
                                             if (fruit[j].sprite == sN[c]) {
                                                 // throwFruit(fruitname, x, y,
                                                 // angle, velocity,
@@ -645,7 +645,7 @@ void main(void) {
                                                     xcount > 0)
                                                     xcount--;
 
-                                                c = sprites;
+                                                break;
                                             }
                                         }
                                     }
@@ -768,10 +768,10 @@ void moveEnts() {
                     eC--;
                 } else {
                     flag = false;
-                    for (c = 0; c <= sprites - 1; c++) {
+                    for (c = 0; c < NUM_FRUITS; c++) {
                         if (fruit[j].sprite == sN[c]) {
                             flag = true;
-                            c = sprites;
+                            break;
                         }
                     }
                     if (flag == true) {
