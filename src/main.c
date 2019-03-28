@@ -210,7 +210,7 @@ void main(void) {
                 // if there is an active line in the array from swiping
                 if (index > 0) {
                     gfx_SetColor(0);
-                    gfx_Line(xList[index - 1], yList[index - 1], x, y);
+                    gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
 
                     if (kb_Data[3] == kb_4) // start
                         button = 1;
@@ -633,7 +633,7 @@ void main(void) {
 
                 // if there is an active line in the array from swiping
                 if (index > 0) {
-                    gfx_Line(xList[index - 1], yList[index - 1], x, y);
+                    gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
 
                     if (game.whole_sprites > 0) { // if whole entity count on the screen is
                                   // greater than 0
@@ -872,10 +872,10 @@ void animateExplosion(int cx, int cy) {
         }
         if (z > 12)
             gfx_FillCircle(cx, cy, (z - 12) * (z - 12) * (z - 12));
-        gfx_Line(cx, cy, sx, sy);
-        gfx_Line(cx + 1, cy + 1, sx + 1, sy + 1);
-        gfx_Line(cx, cy, sx2, sy2);
-        gfx_Line(cx + 1, cy + 1, sx2 + 1, sy2 + 1);
+        gfx_Line_NoClip(cx, cy, sx, sy);
+        gfx_Line_NoClip(cx + 1, cy + 1, sx + 1, sy + 1);
+        gfx_Line_NoClip(cx, cy, sx2, sy2);
+        gfx_Line_NoClip(cx + 1, cy + 1, sx2 + 1, sy2 + 1);
         gfx_SwapDraw();
 
         shake(5);
@@ -1087,7 +1087,7 @@ void swipe(int x, int y) {
 
         gfx_SetColor(0);
         if (index > 0)
-            gfx_Line(xList[index - 1], yList[index - 1], x, y);
+            gfx_Line_NoClip(xList[index - 1], yList[index - 1], x, y);
 
         index++;
         i = 0;
