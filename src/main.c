@@ -128,6 +128,8 @@ void main(void) {
     gfx_SetDrawBuffer();
     gfx_SetPalette(logo_gfx_pal, sizeof_logo_gfx_pal, 0);
 
+    srand(rtc_Time());
+
     memset(&file, 0, sizeof(file));
     ti_CloseAll();
     if (slot = ti_Open(filename, "r"))
