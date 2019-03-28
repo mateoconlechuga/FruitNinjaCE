@@ -36,9 +36,9 @@ bool lineRect(float x1, float y1, float x2, float y2, float rx, float ry,
 bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3,
               float x4, float y4);
 void print_string_centered(char *str, int y, int offset, uint8_t c);
-void keyToXY();
+void keyToXY(int *x_val, int *y_val);
 void shake(int s);
-void swipe();
+void swipe(int x, int y);
 void debugDisplay();
 
 /**
@@ -80,7 +80,7 @@ typedef struct {
 /**
  * Available fruit sprites, with cut components
  */
-fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
+static fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
     { watermelon, watermelon_top,  watermelon_bottom },
     { apple,      apple_top,       apple_bottom      },
     { pear,       pear_top,        pear_bottom       },
@@ -92,14 +92,16 @@ fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
     { banana,     banana_top,      banana_bottom     },
 };
 
-int xcount = 0;
+typedef struct {
+    int xcount;
+} game_t;
+static game_t game;
 
 bool flag = false;
 bool pomflag = false;
-int eC = 0, all_eC = 0, x = 0, y = 0, i = 0, index = 0;
+int eC = 0, all_eC = 0, i = 0, index = 0;
 int mult = 1;
 int xList[1000], yList[1000];
-kb_key_t key;
 
 /* Sprite buffer for rotating sprites */
 gfx_UninitedSprite(sprite_buffer, 64, 64);
@@ -137,6 +139,7 @@ void main(void) {
     do {
         button = 0;
         do {
+            int x, y;
             kb_Scan();
             gfx_FillScreen(4);
 
@@ -197,7 +200,7 @@ void main(void) {
             gfx_TransparentSprite(
                 gfx_RotateSprite(bomb, sprite_buffer, menuRock), 214, 170);
 
-            keyToXY();
+            keyToXY(&x, &y);
 
             if (y > 0) {
                 // put screen swipe locations in array
@@ -301,6 +304,7 @@ void main(void) {
             } while (j > 0);
 
             do {
+                int x, y;
                 kb_Scan();
                 gfx_FillScreen(4);
 
@@ -341,8 +345,8 @@ void main(void) {
                 if (menuRock < -30)
                     clockwise = true;
 
-                keyToXY();
-                swipe();
+                keyToXY(&x, &y);
+                swipe(x, y);
 
                 gfx_BlitBuffer();
             } while (kb_Data[2] != kb_Math);
@@ -402,6 +406,7 @@ void main(void) {
             } while (j > 0);
 
             do {
+                int x, y;
                 kb_Scan();
                 gfx_FillScreen(4);
 
@@ -451,8 +456,8 @@ void main(void) {
                 if (menuRock < -30)
                     clockwise = true;
 
-                keyToXY();
-                swipe();
+                keyToXY(&x, &y);
+                swipe(x, y);
 
                 gfx_BlitBuffer();
             } while (kb_Data[2] != kb_Math);
@@ -513,26 +518,33 @@ void main(void) {
         /* ---------------------------------------------------------------------------------------------------------*/
 
         do {
-            gameTime++;
+            int x, y;
             kb_Scan();
             gfx_FillScreen(5);
             gfx_SetTextXY(2, 2);
             gfx_SetTextFGColor(4);
             gfx_PrintInt(score, 1);
+            gameTime++;
 
             // for in-game debugging
             // debugDisplay();
 
             gfx_PrintStringXY("XXX", 248, 2);
             gfx_SetTextFGColor(1);
-            if (xcount == 1)
-                gfx_PrintStringXY("X", 248, 2);
-            if (xcount == 2)
-                gfx_PrintStringXY("XX", 248, 2);
-            if (xcount == 3)
-                gfx_PrintStringXY("XXX", 248, 2);
-            if (xcount >= 3) {
-                exit = true;
+            switch(game.xcount) {
+                case 1:
+                    gfx_PrintStringXY("X", 248, 2);
+                    break;
+                case 2:
+                    gfx_PrintStringXY("XX", 248, 2);
+                    break;
+                case 3:
+                    gfx_PrintStringXY("XXX", 248, 2);
+                    break;
+                case 4:
+                    exit = true;
+                default:
+                    break;
             }
 
             // move entities on the screen
@@ -583,7 +595,7 @@ void main(void) {
             }
 
             // convert key input to x and y locations on screen
-            keyToXY();
+            keyToXY(&x, &y);
 
             // if there was a swipe over the keys
             if (y > 0) {
@@ -652,8 +664,8 @@ void main(void) {
                                                 score++;
 
                                                 if ((score % 100) == 0 &&
-                                                    xcount > 0)
-                                                    xcount--;
+                                                    game.xcount > 0)
+                                                    game.xcount--;
 
                                                 break;
                                             }
@@ -785,7 +797,7 @@ void moveEnts() {
                         }
                     }
                     if (flag == true) {
-                        xcount++;
+                        game.xcount++;
                         shake(3);
                         eC--;
                     }
@@ -893,9 +905,11 @@ void print_string_centered(char *str, int y, int offset, uint8_t c) {
 }
 
 /* Convert keypress to x/y location for swiping */
-void keyToXY() {
-    x = 0;
-    y = 0;
+void keyToXY(int *x_val, int *y_val) {
+    kb_key_t key;
+    int x = 0;
+    int y = 0;
+
     if (kb_Data[2]) {
         key = kb_Data[2];
         x = 32;
@@ -984,6 +998,9 @@ void keyToXY() {
         if (key == kb_Clear)
             y = 17;
     }
+
+    *x_val = x;
+    *y_val = y;
 }
 
 /* Shake the screen */
@@ -1006,9 +1023,13 @@ void shake(int s) {
     gfx_SwapDraw();
 }
 
-/* Draw slicing lines */
-void swipe() {
-    if (y > 0) { // there was a swipe over the keys
+/**
+ * Draw slicing lines
+ */
+void swipe(int x, int y) {
+
+    // there was a swipe over the keys
+    if (y > 0) {
 
         xList[index] = x;
         yList[index] = y;
@@ -1019,10 +1040,12 @@ void swipe() {
 
         index++;
         i = 0;
-        if (index == 1000)
+        if (index == 1000) {
             index = 0;
+        }
 
-    } else { // there was not a swipe over the keys
+    // there was not a swipe over the keys
+    } else {
 
         if (i < 10)
             i++;
