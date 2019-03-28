@@ -65,24 +65,34 @@ typedef struct {
 #define NUM_FRUITS 9
 static fruit_t fruit[MAX_FRUITS];
 
+/**
+ * Avaiable Fruit sprite structure
+ * uncut: Sprite before fruit is cut
+ * top: Top of cut fruit
+ * bottom: Bottom of cut fruit
+ */
+typedef struct {
+    gfx_sprite_t *uncut;
+    gfx_sprite_t *top;
+    gfx_sprite_t *bottom;
+} fruit_sprite_t;
+
+/**
+ * Available fruit sprites, with cut components
+ */
+fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
+    { watermelon, watermelon_top,  watermelon_bottom },
+    { apple,      apple_top,       apple_bottom      },
+    { pear,       pear_top,        pear_bottom       },
+    { pineapple,  pineapple_top,   pineapple_bottom  },
+    { strawberry, strawberry_top,  strawberry_bottom },
+    { red_apple,  red_apple_top,   red_apple_bottom  },
+    { grapes,     grape_top,       grape_bottom      },
+    { kiwi,       kiwi_top,        kiwi_bottom       },
+    { banana,     banana_top,      banana_bottom     },
+};
+
 int xcount = 0;
-
-gfx_sprite_t *sN[9] = {
-    watermelon, apple,  pear, pineapple, strawberry,
-    red_apple,  grapes, kiwi, banana
-};
-
-gfx_sprite_t *sS[18] = {
-    watermelon_top,  watermelon_bottom,
-    apple_top,       apple_bottom,
-    pear_top,        pear_bottom,
-    pineapple_top,   pineapple_bottom,
-    strawberry_top,  strawberry_bottom,
-    red_apple_top,   red_apple_bottom,
-    grape_top,       grape_bottom,
-    kiwi_top,        kiwi_bottom,
-    banana_top,      banana_bottom
-};
 
 bool flag = false;
 bool pomflag = false;
@@ -123,7 +133,7 @@ void main(void) {
     ti_CloseAll();
 
     /* Menu Loop */
-    /* Technically I'm redrawing everything each loop */
+    /* I'm redrawing everything each loop */
     do {
         button = 0;
         do {
@@ -534,16 +544,16 @@ void main(void) {
                 // throwFruit(fruitname,   x,     y, angle, velocity, rotation,
                 // rotation
                 // speed)
-                throwFruit(sN[rand() % NUM_FRUITS], (int)(25 + (rand() % 250)),
-                           240, PI, 9 + (rand() % 1), 0, rand() % 5);
+                throwFruit(fruit_sprites[rand() % NUM_FRUITS].uncut, (int)(25 + (rand() % 250)),
+                           240, PI, 9, 0, rand() % 5);
                 eC++;
                 all_eC++;
 
-                if ((int)(rand() % 2) == 1) {
+                if (rand() & 1) {
                     for (j = 0; j < (int)(rand() % 3); j++) {
-                        throwFruit(sN[rand() % NUM_FRUITS],
+                        throwFruit(fruit_sprites[rand() % NUM_FRUITS].uncut,
                                    (int)(25 + (rand() % 250)), 240, PI,
-                                   9 + (rand() % 1), 0, rand() % 5);
+                                   9, 0, rand() % 5);
                         eC++;
                         all_eC++;
                     }
@@ -625,14 +635,14 @@ void main(void) {
                                         score++;
                                     } else { // fruit was sliced
                                         for (c = 0; c < NUM_FRUITS; c++) {
-                                            if (fruit[j].sprite == sN[c]) {
+                                            if (fruit[j].sprite == fruit_sprites[c].uncut) {
                                                 // throwFruit(fruitname, x, y,
                                                 // angle, velocity,
                                                 // rotation, rotation speed)
-                                                throwFruit(sS[2 * c], fruit[j].x,
+                                                throwFruit(fruit_sprites[c].top, fruit[j].x,
                                                            fruit[j].y, fruit[j].angle,
                                                            2, fruit[j].rotation, 0);
-                                                throwFruit(sS[2 * c + 1],
+                                                throwFruit(fruit_sprites[c].bottom,
                                                            fruit[j].x, fruit[j].y,
                                                            fruit[j].angle, 0,
                                                            fruit[j].rotation, 0);
@@ -769,7 +779,7 @@ void moveEnts() {
                 } else {
                     flag = false;
                     for (c = 0; c < NUM_FRUITS; c++) {
-                        if (fruit[j].sprite == sN[c]) {
+                        if (fruit[j].sprite == fruit_sprites[c].uncut) {
                             flag = true;
                             break;
                         }
