@@ -58,7 +58,7 @@ typedef struct {
  * Allocate a fixed number of fruits
  */
 #define MAX_FRUITS 20
-#define NUM_FRUITS 9
+#define NUM_FRUITS 13
 static fruit_t fruit[MAX_FRUITS];
 
 /**
@@ -85,7 +85,11 @@ static fruit_sprite_t fruit_sprites[NUM_FRUITS] = {
     { red_apple,  red_apple_top,   red_apple_bottom  },
     { grapes,     grape_top,       grape_bottom      },
     { kiwi,       kiwi_top,        kiwi_bottom       },
-    { banana,     banana_top,      banana_bottom     },
+    { banana,     banana_top,      banana_bottom,    },
+    { coconut,    coconut_top,     coconut_bottom,   },
+    { lemon,      lemon_top,       lemon_bottom,     },
+    { lime,       lime_top,        lime_bottom,      },
+    { orange,     orange_top,      orange_bottom     },
 };
 
 typedef struct {
@@ -591,10 +595,10 @@ void main(void) {
                 gameTime = 0;
             }
 
-            if ((score + 1) % 10 == 0)
+            if ((score + 1) % 25 == 0)
                 game.pomflag = false;
 
-            if (score % 10 == 0 && score > 0 && game.pomflag == false) {
+            if (score % 25 == 0 && score > 0 && game.pomflag == false) {
 
                 fruit_t *n = getFreeFruit();
                 n->sprite = pomegranate;
@@ -1124,4 +1128,3 @@ void debugDisplay() {
 
     gfx_SetTextScale(3, 2);
 }
-
