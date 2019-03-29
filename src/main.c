@@ -182,8 +182,8 @@ static void drawLives(void) {
     }
 }
 
-static void drawScore(void) {
-    drawBackground(false, true);
+static void drawScore(bool partial) {
+    drawBackground(false, partial);
     gfx_SetTextXY(2, 2);
     gfx_SetTextFGColor(4);
     gfx_PrintInt(game.score, 1);
@@ -606,7 +606,7 @@ void main(void) {
         /* ---------------------------------------------------------------------------------------------------------*/
 
         drawBackground(true, false);
-        drawScore();
+        drawScore(true);
 
         do {
             int x, y;
@@ -628,6 +628,8 @@ void main(void) {
                 n->rotation = 0;
                 n->rotation_speed = rand() % 5;
                 n->valid = false;
+
+                drawScore(false);
 
                 game.whole_sprites++;
                 game.total_sprites++;
@@ -743,7 +745,7 @@ void main(void) {
 
                                     } else if (f->sprite == pomegranate) {
                                         game.score++;
-                                        drawScore();
+                                        drawScore(true);
                                     } else { // fruit was sliced
                                         for (c = 0; c < NUM_FRUITS; c++) {
                                             if (f->sprite == fruit_sprites[c].uncut) {
@@ -775,7 +777,7 @@ void main(void) {
                                                 game.total_sprites++;
                                                 f->y = 0;
                                                 game.score++;
-                                                drawScore();
+                                                drawScore(true);
 
                                                 if ((game.score % 100) == 0 &&
                                                     game.xcount > 0) {
