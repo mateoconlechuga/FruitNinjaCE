@@ -54,6 +54,7 @@ typedef struct {
     uint8_t rotation_speed;
     gfx_sprite_t *sprite;
     gfx_sprite_t *background;
+    bool valid;
 } fruit_t;
 
 /**
@@ -184,6 +185,7 @@ void main(void) {
         f->background = gfx_MallocSprite(FRUIT_WIDTH, FRUIT_HEIGHT);
         f->background->width = FRUIT_WIDTH;
         f->background->height = FRUIT_HEIGHT;
+        f->valid = false;
     }
 
     // menu loop
@@ -611,6 +613,7 @@ void main(void) {
                 n->velocity = 9;
                 n->rotation = 0;
                 n->rotation_speed = rand() % 5;
+                n->valid = false;
 
                 game.whole_sprites++;
                 game.total_sprites++;
@@ -626,6 +629,7 @@ void main(void) {
                         n->velocity = 9;
                         n->rotation = 0;
                         n->rotation_speed = rand() % 5;
+                        n->valid = false;
 
                         game.whole_sprites++;
                         game.total_sprites++;
@@ -648,6 +652,7 @@ void main(void) {
                 n->velocity = 8;
                 n->rotation = 0;
                 n->rotation_speed = rand() % 5;
+                n->valid = false;
 
                 game.whole_sprites++;
                 game.total_sprites++;
@@ -665,6 +670,7 @@ void main(void) {
                 n->velocity = 9;
                 n->rotation = 0;
                 n->rotation_speed = rand() % 8;
+                n->valid = false;
 
                 game.whole_sprites++;
                 game.total_sprites++;
@@ -726,9 +732,7 @@ void main(void) {
                                     } else { // fruit was sliced
                                         for (c = 0; c < NUM_FRUITS; c++) {
                                             if (f->sprite == fruit_sprites[c].uncut) {
-                                                // throwFruit(fruitname, x, y,
-                                                // angle, velocity,
-                                                // rotation, rotation speed)
+
                                                 fruit_t *n = getFreeFruit();
                                                 n->sprite = fruit_sprites[c].top;
                                                 n->x = f->x;
@@ -737,6 +741,7 @@ void main(void) {
                                                 n->velocity = 2;
                                                 n->rotation = f->rotation;
                                                 n->rotation_speed = 0;
+                                                n->valid = false;
 
                                                 n = getFreeFruit();
                                                 n->sprite = fruit_sprites[c].bottom;
@@ -746,6 +751,10 @@ void main(void) {
                                                 n->velocity = 0;
                                                 n->rotation = f->rotation;
                                                 n->rotation_speed = 0;
+                                                n->valid = false;
+
+                                                // destroy previous fruit
+                                                gfx_Sprite(f->background, f->x, f->y);
 
                                                 game.whole_sprites--;
                                                 game.total_sprites++;
@@ -845,10 +854,15 @@ void moveFruits(void) {
         fruit_t *f = &fruit[j];
         if (f->y > 0) {
             // clear out the old sprite
-            gfx_Sprite(f->background, f->x, f->y);
+            if (f->valid == false) {
+                f->valid = true;
+            } else {
+                gfx_Sprite(f->background, f->x, f->y);
+            }
         }
     }
 
+    // update the sprite locations
     for (j = 0; j < MAX_FRUITS; j++) {
 
         // get the pointer to the fruit information
@@ -869,12 +883,6 @@ void moveFruits(void) {
 
             // get the new background and draw the moved sprite
             gfx_GetSprite(f->background, f->x, f->y);
-
-            // draw the updated sprite
-            gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
-                                                        sprite_buffer,
-                                                        f->rotation, FRUIT_SCALE * 64),
-                                  f->x, f->y);
 
             if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
                 f->y = 0;
@@ -898,6 +906,20 @@ void moveFruits(void) {
             }
         }
     }
+
+    // draw the new sprites
+    // clear out the old fruit locations
+    for (j = 0; j < MAX_FRUITS; j++) {
+        fruit_t *f = &fruit[j];
+        if (f->y > 0) {
+            // draw the updated sprite
+            gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
+                                                        sprite_buffer,
+                                                        f->rotation, FRUIT_SCALE * 64),
+                                  f->x, f->y);
+        }
+    }
+
 }
 
 /* Display the bomb exploding animation */
