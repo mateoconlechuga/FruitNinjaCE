@@ -102,9 +102,11 @@ typedef struct {
     uint24_t xlist[1000];
     uint8_t ylist[1000];
     uint24_t index;
+    uint24_t score;
     uint8_t delay;
     uint8_t multiplier;
     bool pomflag;
+    bool exit;
 } game_t;
 static game_t game;
 
@@ -131,11 +133,11 @@ static const char *high = "High: ";
 gfx_UninitedSprite(sprite_buffer, 64, 64);
 gfx_UninitedSprite(tile_buffer, WOOD_TILE_WIDTH, WOOD_TILE_HEIGHT);
 
-void drawBackground(void) {
+static void drawBackground(bool load, bool partial) {
     unsigned int x, y;
     unsigned int i;
 
-    if (!wood_gfx_init()) {
+    if (load && !wood_gfx_init()) {
         // default to gray background if no available image
         abort();
         gfx_FillScreen(5);
@@ -150,21 +152,53 @@ void drawBackground(void) {
             x += WOOD_TILE_WIDTH;
             if (x >= LCD_WIDTH) {
                 y += WOOD_TILE_HEIGHT;
-                x = 0;
+                if (partial == true) {
+                    break;
+                } else {
+                    x = 0;
+                }
             }
         }
     }
 }
 
+static void drawLives(void) {
+    gfx_PrintStringXY("XXX", 248, 2);
+    gfx_SetTextFGColor(1);
+    switch(game.xcount) {
+        case 1:
+            gfx_PrintStringXY("X", 248, 2);
+            break;
+        case 2:
+            gfx_PrintStringXY("XX", 248, 2);
+            break;
+        case 3:
+            gfx_PrintStringXY("XXX", 248, 2);
+            break;
+        case 4:
+            game.exit = true;
+        default:
+            break;
+    }
+}
+
+static void drawScore(void) {
+    drawBackground(false, true);
+    gfx_SetTextXY(2, 2);
+    gfx_SetTextFGColor(4);
+    gfx_PrintInt(game.score, 1);
+    drawLives();
+}
+
 void main(void) {
-    unsigned int score = 0;
     ti_var_t slot;
 
     int j, c, jc, jy, menuRock = 0, button = 0, gameTime = 0;
-    bool clockwise = true, exit = false;
+    bool clockwise = true;
 
     game.multiplier = 1;
     game.pomflag = false;
+    game.exit = false;
 
     gfx_Begin();
     gfx_SetDrawBuffer();
@@ -562,7 +596,7 @@ void main(void) {
 
         gfx_SetColor(0);
         gfx_SetTextScale(3, 2);
-        score = 0;
+
         game.total_sprites = 0;
         game.whole_sprites = 0;
 
@@ -571,36 +605,16 @@ void main(void) {
         /* SLICE DEM FRUITS */
         /* ---------------------------------------------------------------------------------------------------------*/
 
-        drawBackground();
+        drawBackground(true, false);
+        drawScore();
 
         do {
             int x, y;
             kb_Scan();
-            gfx_SetTextXY(2, 2);
-            gfx_SetTextFGColor(4);
-            gfx_PrintInt(score, 1);
             gameTime++;
 
             // for in-game debugging
             // debugDisplay();
-
-            gfx_PrintStringXY("XXX", 248, 2);
-            gfx_SetTextFGColor(1);
-            switch(game.xcount) {
-                case 1:
-                    gfx_PrintStringXY("X", 248, 2);
-                    break;
-                case 2:
-                    gfx_PrintStringXY("XX", 248, 2);
-                    break;
-                case 3:
-                    gfx_PrintStringXY("XXX", 248, 2);
-                    break;
-                case 4:
-                    exit = true;
-                default:
-                    break;
-            }
 
             // interval to throw fruits on the screen
             if (gameTime == 100) {
@@ -639,10 +653,10 @@ void main(void) {
                 gameTime = 0;
             }
 
-            if ((score + 1) % 25 == 0)
+            if ((game.score + 1) % 25 == 0)
                 game.pomflag = false;
 
-            if (score % 25 == 0 && score > 0 && game.pomflag == false) {
+            if (game.score % 25 == 0 && game.score > 0 && game.pomflag == false) {
 
                 fruit_t *n = getFreeFruit();
                 n->sprite = pomegranate;
@@ -706,7 +720,7 @@ void main(void) {
                                     if (f->sprite == bomb) {
                                         // YOU HIT A BOMB!!!
                                         animateExplosion(f->x + 20, f->y + 20);
-                                        exit = true;
+                                        game.exit = true;
 
                                         gfx_FillScreen(0);
                                         gfx_SetTextScale(2, 2);
@@ -716,7 +730,7 @@ void main(void) {
                                                               -20, 3);
                                         gfx_SetTextXY(190, 130);
                                         gfx_SetTextFGColor(3);
-                                        gfx_PrintInt(score, 1);
+                                        gfx_PrintInt(game.score, 1);
 
                                         gfx_BlitBuffer();
                                         for(;;) {
@@ -728,7 +742,8 @@ void main(void) {
                                         }
 
                                     } else if (f->sprite == pomegranate) {
-                                        score++;
+                                        game.score++;
+                                        drawScore();
                                     } else { // fruit was sliced
                                         for (c = 0; c < NUM_FRUITS; c++) {
                                             if (f->sprite == fruit_sprites[c].uncut) {
@@ -759,12 +774,14 @@ void main(void) {
                                                 game.whole_sprites--;
                                                 game.total_sprites++;
                                                 f->y = 0;
-                                                score++;
+                                                game.score++;
+                                                drawScore();
 
-                                                if ((score % 100) == 0 &&
-                                                    game.xcount > 0)
+                                                if ((game.score % 100) == 0 &&
+                                                    game.xcount > 0) {
                                                     game.xcount--;
-
+                                                    drawLives();
+                                                }
                                                 break;
                                             }
                                         }
@@ -813,7 +830,7 @@ void main(void) {
                 for(;;) {
                     kb_Scan();
                     if (kb_Data[1] == kb_Window) {
-                        exit = true;
+                        game.exit = true;
                         break;
                     }
                     if (kb_Data[1] == kb_Trace) {
@@ -823,16 +840,18 @@ void main(void) {
             }
 
         // wait until bomb is hit or game loop is otherwise exited
-        } while (!exit);
+        } while (!game.exit);
 
-        if (score > settings.highscore)
-            settings.highscore = score;
+        if (game.score > settings.highscore) {
+            settings.highscore = game.score;
+        }
     }
 
     gfx_End();
 
-    if (slot = ti_Open(filename, "w"))
+    if (slot = ti_Open(filename, "w")) {
         ti_Write(&settings, sizeof settings, 1, slot);
+    }
     ti_CloseAll();
 }
 
@@ -899,6 +918,7 @@ void moveFruits(void) {
                             game.xcount++;
                             shake(3);
                             game.whole_sprites--;
+                            drawLives();
                             break;
                         }
                     }
