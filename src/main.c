@@ -21,8 +21,10 @@
 #include <graphx.h>
 #include <keypadc.h>
 #include <fileioc.h>
+#include <compression.h>
 
-#include "gfx/logo_gfx.h"
+#include "gfx/all_gfx.h"
+#include "gfx/wood_gfx.h"
 
 #define PI 3.1415926
 
@@ -35,8 +37,6 @@ void shake(int s);
 void swipe(int x, int y);
 void debugDisplay();
 
-#define FRUIT_SCALE 1.2
-
 /**
  * Fruit Structure
  * x, y: Coordinates of fruit on screen
@@ -44,6 +44,7 @@ void debugDisplay();
  * velocity: Instanteous velocity of fruit
  * rotation: Angle of rotation of fruit
  * rotation_speed: How fast is the fruit rotating
+ * background: Background buffer for drawing wood
  */
 typedef struct {
     int x, y;
@@ -52,6 +53,7 @@ typedef struct {
     uint8_t rotation;
     uint8_t rotation_speed;
     gfx_sprite_t *sprite;
+    gfx_sprite_t *background;
 } fruit_t;
 
 /**
@@ -118,8 +120,40 @@ static const char *opt = "Options";
 static const char *inf = "Info";
 static const char *high = "High: ";
 
+#define WOOD_TILE_WIDTH 80
+#define WOOD_TILE_HEIGHT 80
+#define FRUIT_SCALE 1.2
+#define FRUIT_WIDTH (FRUIT_SCALE * 32)
+#define FRUIT_HEIGHT (FRUIT_SCALE * 32)
+
 // sprite buffer for rotating sprites
 gfx_UninitedSprite(sprite_buffer, 64, 64);
+gfx_UninitedSprite(tile_buffer, WOOD_TILE_WIDTH, WOOD_TILE_HEIGHT);
+
+void drawBackground(void) {
+    unsigned int x, y;
+    unsigned int i;
+
+    if (!wood_gfx_init()) {
+        // default to gray background if no available image
+        abort();
+        gfx_FillScreen(5);
+    } else {
+
+        tile_buffer->width = WOOD_TILE_WIDTH;
+        tile_buffer->height = WOOD_TILE_HEIGHT;
+
+        for (i = 0, x = 0, y = 0; i < wood_tiles_num; i++) {
+            zx7_Decompress(tile_buffer, wood_tiles_compressed[i]);
+            gfx_Sprite_NoClip(tile_buffer, x, y);
+            x += WOOD_TILE_WIDTH;
+            if (x >= LCD_WIDTH) {
+                y += WOOD_TILE_HEIGHT;
+                x = 0;
+            }
+        }
+    }
+}
 
 void main(void) {
     unsigned int score = 0;
@@ -133,7 +167,7 @@ void main(void) {
 
     gfx_Begin();
     gfx_SetDrawBuffer();
-    gfx_SetPalette(logo_gfx_pal, sizeof_logo_gfx_pal, 0);
+    gfx_SetPalette(all_gfx_pal, sizeof_all_gfx_pal, 0);
 
     srand(rtc_Time());
 
@@ -144,8 +178,16 @@ void main(void) {
     }
     ti_CloseAll();
 
-    /* Menu Loop */
-    /* I'm redrawing everything each loop */
+    // allocate all the fruit buffers
+    for (j = 0; j < MAX_FRUITS; j++) {
+        fruit_t *f = &fruit[j];
+        f->background = gfx_MallocSprite(FRUIT_WIDTH, FRUIT_HEIGHT);
+        f->background->width = FRUIT_WIDTH;
+        f->background->height = FRUIT_HEIGHT;
+    }
+
+    // menu loop
+    // I'm redrawing everything each loop
     do {
         button = 0;
         do {
@@ -527,10 +569,11 @@ void main(void) {
         /* SLICE DEM FRUITS */
         /* ---------------------------------------------------------------------------------------------------------*/
 
+        drawBackground();
+
         do {
             int x, y;
             kb_Scan();
-            gfx_FillScreen(5);
             gfx_SetTextXY(2, 2);
             gfx_SetTextFGColor(4);
             gfx_PrintInt(score, 1);
@@ -556,9 +599,6 @@ void main(void) {
                 default:
                     break;
             }
-
-            // move fruit entities on the screen
-            moveFruits();
 
             // interval to throw fruits on the screen
             if (gameTime == 100) {
@@ -737,6 +777,9 @@ void main(void) {
                     game.index = 0;
             }
 
+            // move fruit entities on the screen
+            moveFruits();
+
             gfx_BlitBuffer();
 
             if (kb_Data[1] == kb_Mode) {
@@ -796,17 +839,22 @@ fruit_t *getFreeFruit(void) {
 // move any fruit entities that are on the screen
 void moveFruits(void) {
     uint8_t j;
+
+    // clear out the old fruit locations
+    for (j = 0; j < MAX_FRUITS; j++) {
+        fruit_t *f = &fruit[j];
+        if (f->y > 0) {
+            // clear out the old sprite
+            gfx_Sprite(f->background, f->x, f->y);
+        }
+    }
+
     for (j = 0; j < MAX_FRUITS; j++) {
 
         // get the pointer to the fruit information
         fruit_t *f = &fruit[j];
 
         if (f->y > 0) {
-            gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
-                                                        sprite_buffer,
-                                                        f->rotation, FRUIT_SCALE * 64),
-                                  f->x, f->y);
-
             f->y -= f->velocity;
             f->velocity -= 0.2;
 
@@ -818,6 +866,16 @@ void moveFruits(void) {
 
             f->x += game.multiplier * sin(f->angle);
             f->rotation += f->rotation_speed;
+
+            // get the new background and draw the moved sprite
+            gfx_GetSprite(f->background, f->x, f->y);
+
+            // draw the updated sprite
+            gfx_TransparentSprite(gfx_RotateScaleSprite(f->sprite,
+                                                        sprite_buffer,
+                                                        f->rotation, FRUIT_SCALE * 64),
+                                  f->x, f->y);
+
             if (f->y >= 240 || f->x >= 320 || f->x <= -32) {
                 f->y = 0;
                 game.total_sprites--;
@@ -896,8 +954,8 @@ bool isSliced(int x1, int y1, int x2, int y2, int rx1, int ry1) {
     int minY, maxY;
     int dx;
 
-    int rx2 = rx1 + FRUIT_SCALE * 32;
-    int ry2 = ry1 + FRUIT_SCALE * 32;
+    int rx2 = rx1 + FRUIT_WIDTH;
+    int ry2 = ry1 + FRUIT_HEIGHT;
 
     if (x1 > x2) {
         minX = x2;
